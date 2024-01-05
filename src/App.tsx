@@ -12,15 +12,39 @@ import {
   WrapItem,
 } from "@chakra-ui/react";
 
+// ... (previous imports)
+
 function App() {
   const [uploadedImages, setUploadedImages] = React.useState<CustomImage[]>([]);
+  const [isDragging, setIsDragging] = React.useState<boolean>(false);
 
   const handleImageUpload: ChangeEventHandler<HTMLInputElement> = (event) => {
     const fileList = event.target.files;
+    handleFileList(fileList);
+  };
+
+  const handleFileList = (fileList: FileList | null) => {
     const fileArray = fileList ? Array.from(fileList) : [];
     const fileToImagePromises = fileArray.map(Helpers.fileToImageURL);
 
     Promise.all(fileToImagePromises).then(setUploadedImages);
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+
+    const fileList = event.dataTransfer.files;
+    handleFileList(fileList);
   };
 
   const cleanUpUploadedImages = () => {
@@ -35,10 +59,24 @@ function App() {
     cleanUpUploadedImages();
   };
 
+
   return (
     <Box>
-      <Flex direction="column" align="center" justify="center" minH="100vh">
-        {/* <Heading mb={4}>Convert images to PDFs</Heading> */}
+      <Flex
+        direction="column"
+        align="center"
+        justify="center"
+        minH="100vh"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        style={{
+          border: isDragging ? "2px dashed #008080" : "2px dashed #A0AEC0",
+          borderRadius: "8px",
+          padding: "20px",
+        }}
+      >
+        <Heading mb={4}>Convert images to PDFs</Heading>
 
         <Wrap spacing={4} justify="center">
           {uploadedImages.length > 0 ? (
@@ -54,9 +92,10 @@ function App() {
               </WrapItem>
             ))
           ) : (
-            <Heading>Upload some images...</Heading>
+            <Text>Drag & drop images or click to upload</Text>
           )}
         </Wrap>
+
         <Flex direction="column" align="center" mt={4}>
           <label htmlFor="file-input">
             <Button as="span" colorScheme="teal" variant="outline">

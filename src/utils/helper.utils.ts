@@ -1,7 +1,6 @@
 import jsPDF from "jspdf";
 import { CustomImage } from "../Components/CustomImage";
 
-
 const A4_PAPER_DIMENSIONS = {
   width: 210,
   height: 297,
@@ -20,15 +19,13 @@ export const imageDimensionsOnA4 = (dimensions: ImageDimension) => {
   if (isLandscapeImage) {
     return {
       width: A4_PAPER_DIMENSIONS.width,
-      height:
-        A4_PAPER_DIMENSIONS.width / (dimensions.width / dimensions.height),
+      height: A4_PAPER_DIMENSIONS.width / (dimensions.width / dimensions.height),
     };
   }
 
   const imageRatio = dimensions.width / dimensions.height;
   if (imageRatio > A4_PAPER_RATIO) {
-    const imageScaleFactor =
-      (A4_PAPER_RATIO * dimensions.height) / dimensions.width;
+    const imageScaleFactor = (A4_PAPER_RATIO * dimensions.height) / dimensions.width;
 
     const scaledImageHeight = A4_PAPER_DIMENSIONS.height * imageScaleFactor;
 
@@ -60,7 +57,7 @@ export const fileToImageURL = (file: File): Promise<CustomImage> => {
   });
 };
 
-export const generatePdfFromImages = (images: CustomImage[]) => {
+export const generatePdfFromImages = (images: CustomImage[]): Blob => {
   const doc = new jsPDF();
   doc.deletePage(1);
 
@@ -81,6 +78,5 @@ export const generatePdfFromImages = (images: CustomImage[]) => {
     );
   });
 
-  const pdfURL = doc.output("bloburl");
-  window.open(pdfURL as any, "_blank");
+  return doc.output("blob");
 };

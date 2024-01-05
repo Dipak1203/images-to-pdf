@@ -1,35 +1,73 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { ChangeEventHandler } from "react";
+
+import * as Helpers from "./utils/helper.utils";
+import { CustomImage } from "./Components/CustomImage";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [uploadedImages, setUploadedImages] = React.useState<CustomImage[]>([]);
+
+  const handleImageUpload = React.useCallback<
+    ChangeEventHandler<HTMLInputElement>
+  >(
+    (event) => {
+      const fileList = event.target.files;
+      const fileArray = fileList ? Array.from(fileList) : [];
+      const fileToImagePromises = fileArray.map(Helpers.fileToImageURL);
+
+      Promise.all(fileToImagePromises).then(setUploadedImages);
+    },
+    [setUploadedImages]
+  );
+
+  const cleanUpUploadedImages = React.useCallback(() => {
+    setUploadedImages([]);
+    uploadedImages.forEach((image) => {
+      URL.revokeObjectURL(image.src);
+    });
+  }, [setUploadedImages, uploadedImages]);
+
+  const generatePdfFromImages = React.useCallback(() => {
+    Helpers.generatePdfFromImages(uploadedImages);
+    cleanUpUploadedImages();
+  }, [uploadedImages, cleanUpUploadedImages]);
 
   return (
     <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <h1>Convert images to PDFs</h1>
+
+      <div className="images-container">
+        {uploadedImages.length > 0 ? (
+          uploadedImages.map((image) => (
+            <img key={image.src} src={image.src} className="uploaded-image" width={"100px"} />
+          ))
+        ) : (
+          <p>Upload some images...</p>
+        )}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+
+      <div className="buttons-container">
+        <label htmlFor="file-input">
+          <span className="button">Upload images</span>
+          <input
+            id="file-input"
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            style={{ display: "none" }}
+            multiple
+          />
+        </label>
+
+        <button
+          onClick={generatePdfFromImages}
+          className="button"
+          disabled={uploadedImages.length === 0}
+        >
+          Generate PDF
         </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

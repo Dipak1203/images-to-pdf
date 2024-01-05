@@ -1,13 +1,23 @@
 import React, { ChangeEventHandler } from "react";
 import * as Helpers from "./utils/helper.utils";
 import { CustomImage } from "./Components/CustomImage";
-import { Flex, Box, Heading, Button, Input, Wrap, WrapItem } from "@chakra-ui/react";
+import {
+  Flex,
+  Box,
+  Heading,
+  Button,
+  Input,
+  Wrap,
+  WrapItem,
+  Spinner,
+} from "@chakra-ui/react";
 import { saveAs } from "file-saver";
 
 function App() {
   const [uploadedImages, setUploadedImages] = React.useState<CustomImage[]>([]);
   const [isDragging, setIsDragging] = React.useState<boolean>(false);
   const [pdfBlob, setPdfBlob] = React.useState<Blob | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = React.useState<boolean>(false);
 
   const handleImageUpload: ChangeEventHandler<HTMLInputElement> = (event) => {
     const fileList = event.target.files;
@@ -44,24 +54,33 @@ function App() {
       URL.revokeObjectURL(image.src);
     });
   };
-
-  const generatePdfFromImages = () => {
-    const pdfBlob = Helpers.generatePdfFromImages(uploadedImages);
-    setPdfBlob(pdfBlob);
-    openPdfInNewTab(pdfBlob);
+  const generatePdfFromImages = async () => {
+    try {
+      setIsGeneratingPdf(true);
+      const pdfBlob = await Helpers.generatePdfFromImages(uploadedImages);
+      // console.log("Generated PDF Blob:", pdfBlob);
+      setPdfBlob(pdfBlob);
+      openPdfInNewTab(pdfBlob);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
-
+  
+  const openPdfInNewTab = (blob: Blob) => {
+    const pdfUrl = URL.createObjectURL(blob);
+    console.log("PDF URL:", pdfUrl);
+    window.open(pdfUrl, "_blank");
+  };
+  
   const handleDownloadPdf = () => {
     if (pdfBlob) {
-      saveAs(pdfBlob, "dipak-pdf.pdf");
+      saveAs(pdfBlob, "diapk-pdf.pdf");
       cleanUpUploadedImages();
     }
   };
 
-  const openPdfInNewTab = (blob: Blob) => {
-    const pdfUrl = URL.createObjectURL(blob);
-    window.open(pdfUrl, "_blank");
-  };
 
   return (
     <Box bg="">
@@ -81,7 +100,9 @@ function App() {
           padding: "20px",
         }}
       >
-        {uploadedImages.length === 0 && <Heading mb={4}>Drag & Drop Images</Heading>}
+        {uploadedImages.length === 0 && (
+          <Heading mb={4}>Drag & Drop Images</Heading>
+        )}
 
         <Wrap spacing={4} justify="center">
           {uploadedImages.length > 0 &&
@@ -122,14 +143,16 @@ function App() {
                 colorScheme="teal"
                 variant="solid"
                 mt={4}
+                isDisabled={isGeneratingPdf}
               >
-                View PDF
+                {isGeneratingPdf ? <Spinner /> : "View PDF"}
               </Button>
               <Button
                 onClick={handleDownloadPdf}
                 colorScheme="teal"
                 variant="outline"
                 mt={4}
+                isDisabled={isGeneratingPdf}
               >
                 Download PDF
               </Button>
